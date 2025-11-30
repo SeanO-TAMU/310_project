@@ -7,7 +7,7 @@ app = Flask(__name__)
 # --- Database Configuration ---
 db_config = {
     'host': 'localhost',
-    'database': 'school_db',
+    'database': 'library',
     'user': 'root',      # <-- IMPORTANT: Change to your MySQL username
     'password': 'maggie1641' # <-- IMPORTANT: Change to your MySQL password
 }
