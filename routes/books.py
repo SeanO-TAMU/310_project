@@ -40,6 +40,30 @@ def get_book(id):
     
     return jsonify({'book': book})
 
+@books_bp.get("/<string:param>")
+def get_books(param):
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    cursor = conn.cursor(dictionary=True)
+    
+    user, error = require_token()
+    if error:
+        return error
+    
+    param += "%"
+    
+    cursor.execute("SELECT * FROM Books WHERE title LIKE %s or author LIKE %s", (param, param))
+    books = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    if books == []:
+        return jsonify({'error': 'No books in database'}), 404
+    
+    return jsonify({'books': books})
+    
 
 
 # need auth token on the below routes, also need to check for role
@@ -50,7 +74,17 @@ def create_book():
         return jsonify({'error': 'Database connection failed'}), 500
     
     cursor = conn.cursor(dictionary=True)
+    
+    user, error = require_token()
+    if error:
+        return error
 
+    if user["role"] != "manager":
+        return {"error": "Forbidden"}, 403
+
+
+
+# think about how we need to handle update. Do we want users to be able to change quantity available when they make an order?
 @books_bp.put("/<int:id>")
 def update_book():
     conn = get_db_connection()
