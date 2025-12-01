@@ -1,3 +1,5 @@
+import mysql.connector
+from mysql.connector import Error
 # --- Database Configuration ---
 db_config = {
     'host': 'localhost',

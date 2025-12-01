@@ -1,6 +1,4 @@
 from flask import Flask, jsonify, request
-import mysql.connector
-from mysql.connector import Error
 
 from routes.users import users_bp
 from routes.books import books_bp

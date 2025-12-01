@@ -62,11 +62,16 @@ def create_billing():
         return error
     
     cursor.execute("INSERT INTO Billings (userID, order_date, total_cost) VALUES (%s, %s, %s)", (user["userID"], datetime.now(),total_cost))
+    
+    billing_id = cursor.lastrowid
     conn.commit()
     cursor.close()
     conn.close()
 
-    return {"message": "Billing created successfully"}, 201
+    return {
+        "message": "Billing created successfully",
+        "billingID": billing_id
+    }, 201
 
 @billings_bp.put("/<int:id>")
 def update_billing(id):
