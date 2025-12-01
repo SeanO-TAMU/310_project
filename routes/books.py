@@ -69,6 +69,13 @@ def get_books(param):
 # need auth token on the below routes, also need to check for role
 @books_bp.post("/")
 def create_book():
+    data = request.json
+    title = data.get("title")
+    author = data.get("author")
+    rental_price = float(data.get("rental_price"))
+    buy_price = float(data.get("buy_price"))
+    quantity = int(data.get("quantity"))
+
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -81,12 +88,25 @@ def create_book():
 
     if user["role"] != "manager":
         return {"error": "Forbidden"}, 403
+    
+    cursor.execute("INSERT INTO Books (name, email, rental_price, buy_price, quantity) VALUES (%s, %s, %s, %s, %s)", (title, author, rental_price, buy_price, quantity))
+    conn.commit()
+    cursor.close()
+    conn.close()
 
+    return {"message": "Book created successfully"}, 201
 
 
 # think about how we need to handle update. Do we want users to be able to change quantity available when they make an order?
 @books_bp.put("/<int:id>")
-def update_book():
+def update_book(id):
+    data = request.json
+    title = data.get("title")
+    author = data.get("author")
+    rental_price = float(data.get("rental_price"))
+    buy_price = float(data.get("buy_price"))
+    quantity = int(data.get("quantity"))
+
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -99,3 +119,10 @@ def update_book():
 
     if user["role"] != "manager":
         return {"error": "Forbidden"}, 403
+    
+    cursor.execute("UPDATE Books SET title=%s, author=%s, rental_price=%s, buy_price=%s, quantity=%s, WHERE bookID=%s", (title, author, rental_price, buy_price, quantity, id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return {"message": "Book updated successfully"}, 201
