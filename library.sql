@@ -11,7 +11,7 @@ CREATE TABLE Users (
     name VARCHAR(100),
     email VARCHAR(100),
     password VARCHAR(255),
-    auth_token VARCHAR(255),
+    auth_token VARCHAR(255) DEFAULT NULL,
     role ENUM('manager', 'customer') DEFAULT 'customer'
 );
 
