@@ -11,6 +11,13 @@ billings_bp = Blueprint("billings", __name__, url_prefix="/billings")
 
 @billings_bp.get("/")
 def get_all_billings():
+    user, error = require_token()
+    if error:
+        return error
+    
+    if user["role"] != "manager":
+        return {"error": "Forbidden"}, 403
+    
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -30,6 +37,10 @@ def get_all_billings():
 
 @billings_bp.get("/<int:id>")
 def get_billing(id):
+    user, error = require_token()
+    if error:
+        return error
+    
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -38,16 +49,27 @@ def get_billing(id):
 
     cursor.execute("SELECT billingID, userID, order_date, total_cost, status FROM Billings WHERE billingID = %s", (id,))
     billing = cursor.fetchone()
+    
     cursor.close()
     conn.close()
 
     if billing is None:
         return jsonify({'error': 'Billing not found in database'}), 404
+
+    if user["role"] != "manager" and user["userID"] != billing["userID"]:
+        return {"error": "Forbidden"}, 403
     
     return jsonify({'billing': billing})
 
 @billings_bp.post("/")
 def create_billing():
+    user, error = require_token()
+    if error:
+        return error
+    
+    if user["role"] == "manager":
+        return {"error": "Forbidden"}, 403
+    
     data = request.json
     total_cost = float(data.get("total_cost"))
 
@@ -56,10 +78,6 @@ def create_billing():
         return jsonify({'error': 'Database connection failed'}), 500
     
     cursor = conn.cursor(dictionary=True)
-    
-    user, error = require_token()
-    if error:
-        return error
     
     cursor.execute("INSERT INTO Billings (userID, order_date, total_cost) VALUES (%s, %s, %s)", (user["userID"], datetime.now(),total_cost))
     
@@ -75,7 +93,12 @@ def create_billing():
 
 @billings_bp.put("/<int:id>")
 def update_billing(id):
-    data = request.json
+    user, error = require_token()
+    if error:
+        return error
+    
+    if user["role"] != "manager":
+        return {"error": "Forbidden"}, 403
 
     conn = get_db_connection()
     if conn is None:
@@ -83,12 +106,6 @@ def update_billing(id):
     
     cursor = conn.cursor(dictionary=True)
 
-    user, error = require_token()
-    if error:
-        return error
-
-    if user["role"] != "manager":
-        return {"error": "Forbidden"}, 403
     
     cursor.execute("SELECT status FROM Billings WHERE billingID = %s", (id,))
     billing = cursor.fetchone()
@@ -100,11 +117,11 @@ def update_billing(id):
     if billing["status"] == "pending":
         status = "paid"
     else:
-        status = "pending"
+        return {"error": "Already paid"}, 403
 
     cursor.execute("UPDATE Billings SET status=%s WHERE billingID=%s", (status, id))
     conn.commit()
     cursor.close()
     conn.close()
 
-    return {"message": "Billing updated successfully"}, 201
+    return {"message": "Billing updated successfully"}, 200
