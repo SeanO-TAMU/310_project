@@ -7,6 +7,10 @@ books_bp = Blueprint("books", __name__, url_prefix="/books")
 
 @books_bp.get("/")
 def get_all_books():
+    user, error = require_token()
+    if error:
+        return error
+    
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -25,6 +29,10 @@ def get_all_books():
 
 @books_bp.get("/<int:id>")
 def get_book(id):
+    user, error = require_token()
+    if error:
+        return error
+    
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
@@ -40,19 +48,23 @@ def get_book(id):
     
     return jsonify({'book': book})
 
-@books_bp.get("/<string:param>")
-def get_books(param):
+@books_bp.get("/search")
+def search_books():
+    user, error = require_token()
+    if error:
+        return error
+    
+    query = request.args.get("query", "")
+    if query == "":
+        return {"error": "Missing search query"}, 400
+    
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
     
     cursor = conn.cursor(dictionary=True)
     
-    user, error = require_token()
-    if error:
-        return error
-    
-    param += "%"
+    param = query + "%"
     
     cursor.execute("SELECT * FROM Books WHERE title LIKE %s or author LIKE %s", (param, param))
     books = cursor.fetchall()
@@ -60,7 +72,7 @@ def get_books(param):
     conn.close()
 
     if books == []:
-        return jsonify({'error': 'No books in database'}), 404
+        return jsonify({'error': 'No matching books in database'}), 404
     
     return jsonify({'books': books})
     
@@ -76,20 +88,20 @@ def create_book():
     buy_price = float(data.get("buy_price"))
     quantity = int(data.get("quantity"))
 
+    user, error = require_token()
+    if error:
+        return error
+    
+    if user["role"] != "manager":
+        return {"error": "Forbidden"}, 403
+
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
     
     cursor = conn.cursor(dictionary=True)
     
-    user, error = require_token()
-    if error:
-        return error
-
-    if user["role"] != "manager":
-        return {"error": "Forbidden"}, 403
-    
-    cursor.execute("INSERT INTO Books (name, email, rental_price, buy_price, quantity) VALUES (%s, %s, %s, %s, %s)", (title, author, rental_price, buy_price, quantity))
+    cursor.execute("INSERT INTO Books (title, author, rental_price, buy_price, quantity) VALUES (%s, %s, %s, %s, %s)", (title, author, rental_price, buy_price, quantity))
     conn.commit()
     cursor.close()
     conn.close()
@@ -107,22 +119,22 @@ def update_book(id):
     buy_price = float(data.get("buy_price"))
     quantity = int(data.get("quantity"))
 
+    user, error = require_token()
+    if error:
+        return error
+    
+    if user["role"] != "manager":
+        return {"error": "Forbidden"}, 403
+
     conn = get_db_connection()
     if conn is None:
         return jsonify({'error': 'Database connection failed'}), 500
     
     cursor = conn.cursor(dictionary=True)
-
-    user, error = require_token()
-    if error:
-        return error
-
-    if user["role"] != "manager":
-        return {"error": "Forbidden"}, 403
     
-    cursor.execute("UPDATE Books SET title=%s, author=%s, rental_price=%s, buy_price=%s, quantity=%s, WHERE bookID=%s", (title, author, rental_price, buy_price, quantity, id))
+    cursor.execute("UPDATE Books SET title=%s, author=%s, rental_price=%s, buy_price=%s, quantity=%s WHERE bookID=%s", (title, author, rental_price, buy_price, quantity, id))
     conn.commit()
     cursor.close()
     conn.close()
 
-    return {"message": "Book updated successfully"}, 201
+    return {"message": "Book updated successfully"}, 200
