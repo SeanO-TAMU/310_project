@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
-
-from auth import require_token 
+from .auth import require_token
 
 books_bp = Blueprint("books", __name__, url_prefix="/books")
 

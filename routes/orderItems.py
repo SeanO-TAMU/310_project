@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
-from auth import require_token
-
+from .auth import require_token
 
 orderitems_bp = Blueprint("orderitems", __name__, url_prefix="/orderitems")
 

@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
 import bcrypt
+from .auth import require_token
 
-from auth import require_token
 # use this when creating salted password, the below is what should be stored in db
 # hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 users_bp = Blueprint("users", __name__, url_prefix="/users")

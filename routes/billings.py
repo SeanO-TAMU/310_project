@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
-from auth import require_token
 from datetime import datetime
+
+from .auth import require_token
 
 
 # need a get all billings, get a single billing, create billing, update billing payment status
