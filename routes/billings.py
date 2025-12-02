@@ -61,6 +61,7 @@ def get_billing(id):
     
     return jsonify({'billing': billing})
 
+# need a route here that compiles all orders into an email for the customer
 @billings_bp.post("/")
 def create_billing():
     user, error = require_token()
