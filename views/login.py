@@ -1,11 +1,16 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import requests
+from views.logout import LogoutPage
+from views.books import BookPage
+from views.billings import BillingPage
 
 
 class LoginPage:
-    def __init__(self, root):
+    def __init__(self, root, session, url):
         self.root = root
+        self.url = url
+        self.session = session
         root.title("Library System - Login")
         root.geometry("420x260")  # adjust as needed
 
@@ -60,6 +65,9 @@ class LoginPage:
         if not email.strip() or not password.strip():
             messagebox.showerror("Error", "Email and password are required.")
             return
+        
+        email = email.strip()
+        password =password.strip()
 
         print("Login: ", email, password)
 
@@ -70,12 +78,29 @@ class LoginPage:
         }
 
         try:
-            response = requests.post("http://127.0.0.1:5000/login", json=data)
+            response = requests.post(self.url + "/auth/login", json=data)
 
             if response.status_code == 200:
                 result = response.json()
                 print("Login successful:", result)
+                self.session.user_id = result["userID"]
+                self.session.role = result["role"]
+                self.session.token = result["token"]
+
                 # TODO: open next screen
+                # close login window
+                self.root.withdraw()
+
+                # open LogoutPage window
+                logout_win = tk.Toplevel()
+                LogoutPage(logout_win, self.session, self.url, self.root)
+
+                books_win = tk.Toplevel(self.root)
+                BookPage(books_win, self.session, self.url)
+
+                billings_win = tk.Toplevel(self.root)
+                BillingPage(billings_win, self.session, self.url)
+
             else:
                 self.error_label.config(text="Invalid email or password.")
 
@@ -86,12 +111,57 @@ class LoginPage:
 
         if not name.strip() or not email.strip() or not password.strip():
             messagebox.showerror("Error", "Name, email and password are required.")
-    
+
+        email = email.strip()
+        password =password.strip()
+        name = name.strip()
+
         print("Sign up as customer: ", name, email, password)
+        
+        data = {
+            "name": name,
+            "email": email,
+            "password": password
+        }
+
+        try:
+            response = requests.post(self.url + "/users/", json=data)
+            
+            if response.status_code == 201:
+                print("User created successfully")
+                self.login_user(email, password)
+        
+        except requests.exceptions.ConnectionError:
+            self.error_label.config(text="Server unavailable.")
+
+        # need to call sign up route and then after call the log in route
     
+       
     def sign_up_man(self, name, email, password):
 
         if not name.strip() or not email.strip() or not password.strip():
             messagebox.showerror("Error", "Name, email and password are required.")
+
+        # need to call sign up route and then after call the log in route
+
+        email = email.strip()
+        password =password.strip()
+        name = name.strip()
         
         print("Sign up as manager: ", name, email, password)
+        
+        data = {
+            "name": name,
+            "email": email,
+            "password": password
+        }
+
+        try:
+            response = requests.post(self.url + "/users/manager", json=data)
+            
+            if response.status_code == 201:
+                print("User created successfully")
+                self.login_user(email, password)
+        
+        except requests.exceptions.ConnectionError:
+            self.error_label.config(text="Server unavailable.")

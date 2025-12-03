@@ -41,11 +41,15 @@ def login():
     user = cursor.fetchone()
 
     if not user:
+        cursor.close()
+        conn.close()
         return {"error": "Invalid credentials"}, 401
 
     stored_hash = user["password"].encode()
 
     if not bcrypt.checkpw(password.encode(), stored_hash):
+        cursor.close()
+        conn.close()
         return {"error": "Invalid credentials"}, 401
 
    
