@@ -23,7 +23,7 @@ class LoginPage:
         # -------------------------
 
         # Name
-        ttk.Label(frame, text="Name:").grid(row=0, column=0, sticky="w", pady=5)
+        ttk.Label(frame, text="Username:").grid(row=0, column=0, sticky="w", pady=5)
         name_entry = ttk.Entry(frame, width=30)
         name_entry.grid(row=0, column=1, pady=5)
 
@@ -52,7 +52,7 @@ class LoginPage:
         for i in range(3):
             button_frame.columnconfigure(i, pad=10)
 
-        login_btn = ttk.Button(button_frame, text="Login",command=lambda: self.login_user(email_entry.get(), password_entry.get()))
+        login_btn = ttk.Button(button_frame, text="Login",command=lambda: self.login_user(name_entry.get(), password_entry.get()))
         signup_customer_btn = ttk.Button(button_frame, text="Sign Up (Customer)", command=lambda: self.sign_up_cust(name_entry.get(), email_entry.get(), password_entry.get()))
         signup_manager_btn = ttk.Button(button_frame, text="Sign Up (Manager)", command=lambda: self.sign_up_man(name_entry.get(), email_entry.get(), password_entry.get()))
 
@@ -60,20 +60,20 @@ class LoginPage:
         signup_customer_btn.grid(row=0, column=1, padx=5)
         signup_manager_btn.grid(row=0, column=2, padx=5)
 
-    def login_user(self, email, password):
+    def login_user(self, name, password):
 
-        if not email.strip() or not password.strip():
-            messagebox.showerror("Error", "Email and password are required.")
+        if not name.strip() or not password.strip():
+            messagebox.showerror("Error", "username and password are required.")
             return
         
-        email = email.strip()
+        name = name.strip()
         password =password.strip()
 
-        print("Login: ", email, password)
+        print("Login: ", name, password)
 
         # payload for the server
         data = {
-            "email": email,
+            "name": name,
             "password": password
         }
 
@@ -102,7 +102,7 @@ class LoginPage:
                 BillingPage(billings_win, self.session, self.url)
 
             else:
-                self.error_label.config(text="Invalid email or password.")
+                self.error_label.config(text="Invalid name or password.")
 
         except requests.exceptions.ConnectionError:
             self.error_label.config(text="Server unavailable.")
@@ -129,7 +129,7 @@ class LoginPage:
             
             if response.status_code == 201:
                 print("User created successfully")
-                self.login_user(email, password)
+                self.login_user(name, password)
         
         except requests.exceptions.ConnectionError:
             self.error_label.config(text="Server unavailable.")
@@ -161,7 +161,7 @@ class LoginPage:
             
             if response.status_code == 201:
                 print("User created successfully")
-                self.login_user(email, password)
+                self.login_user(name, password)
         
         except requests.exceptions.ConnectionError:
             self.error_label.config(text="Server unavailable.")

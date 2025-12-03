@@ -31,13 +31,13 @@ def require_token():
 @auth_bp.post("/login")
 def login():
     data = request.json
-    email = data.get("email")
+    name = data.get("name")
     password = data.get("password")
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM Users WHERE email=%s", (email,))
+    cursor.execute("SELECT * FROM Users WHERE name=%s", (name,))
     user = cursor.fetchone()
 
     if not user:

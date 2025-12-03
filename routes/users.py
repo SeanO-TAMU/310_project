@@ -31,6 +31,12 @@ def create_user():
         cursor.close()
         conn.close()
         return {"error": "Email already exists"}, 409
+    
+    cursor.execute("SELECT userID FROM Users WHERE name=%s", (name,))
+    if cursor.fetchone():
+        cursor.close()
+        conn.close()
+        return {"error": "Name already exists"}, 409
 
     cursor.execute("INSERT INTO Users (name, email, password) VALUES (%s, %s, %s)", (name, email, password))
     conn.commit()
@@ -62,6 +68,13 @@ def create_manager():
         cursor.close()
         conn.close()
         return {"error": "Email already exists"}, 409
+    
+    cursor.execute("SELECT userID FROM Users WHERE name=%s", (name,))
+    if cursor.fetchone():
+        cursor.close()
+        conn.close()
+        return {"error": "Name already exists"}, 409
+
 
     cursor.execute("INSERT INTO Users (name, email, password, role) VALUES (%s, %s, %s, %s)", (name, email, password, 'manager'))
     conn.commit()
