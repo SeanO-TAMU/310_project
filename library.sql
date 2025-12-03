@@ -29,7 +29,7 @@ CREATE TABLE Billings (
     userID INT NOT NULL,
     order_date DATETIME NOT NULL,
     total_cost DECIMAL(10, 2),
-    status ENUM('pending', 'paid') DEFAULT 'paid',
+    status ENUM('pending', 'paid') DEFAULT 'pending',
     FOREIGN KEY (userID) REFERENCES Users(userID)
 );
 
@@ -53,5 +53,15 @@ INSERT INTO Books (title, author, rental_price, buy_price, quantity) VALUES
 ('Harry Potter and the Sorcerer''s Stone', 'J.K. Rowling', 3.99, 14.99, 10),
 ('Pride and Prejudice', 'Jane Austen', 1.49, 7.99, 4),
 ('The Fault in Our Stars', 'John Green', 2.19, 10.49, 3),
-('Dune', 'Frank Herbert', 3.99, 15.99, 5);
+('Dune', 'Frank Herbert', 3.99, 15.99, 5),
+('The Name of the Wind', 'Patrick Rothfuss', 3.49, 13.99, 6),
+('The Silent Patient', 'Alex Michaelides', 2.79, 11.99, 4),
+('The Martian', 'Andy Weir', 3.29, 12.49, 7),
+('A Game of Thrones', 'George R.R. Martin', 3.99, 14.99, 5),
+('The Girl with the Dragon Tattoo', 'Stieg Larsson', 2.89, 10.99, 3),
+('Ready Player One', 'Ernest Cline', 2.49, 9.99, 8),
+('The Road', 'Cormac McCarthy', 1.99, 8.49, 4),
+('Ender''s Game', 'Orson Scott Card', 2.19, 9.79, 5),
+('The Alchemist', 'Paulo Coelho', 1.59, 7.49, 6),
+('Life of Pi', 'Yann Martel', 2.29, 10.29, 3);
 
