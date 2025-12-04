@@ -122,6 +122,21 @@ def update_billing(id):
         return {"error": "Already paid"}, 403
 
     cursor.execute("UPDATE Billings SET status=%s WHERE billingID=%s", (status, id))
+
+    # now go through orderitems to get bookid and decrease book quantity
+    cursor.execute("SELECT bookID, order_type FROM OrderItems WHERE billingID = %s", (id,))
+    order_items = cursor.fetchall()
+
+    for item in order_items:
+        book_id = item["bookID"]
+
+        # Reduce quantity by 1
+        cursor.execute(
+            "UPDATE Books SET quantity = quantity - 1 WHERE bookID = %s AND quantity > 0",
+            (book_id,)
+        )
+
+
     conn.commit()
     cursor.close()
     conn.close()
