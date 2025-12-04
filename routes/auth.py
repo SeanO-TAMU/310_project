@@ -2,6 +2,11 @@ import secrets
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
 import bcrypt
+import os
+import smtplib
+from email.mime.text import MIMEText
+from dotenv import load_dotenv
+load_dotenv()
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -78,3 +83,88 @@ def logout():
     conn.close()
 
     return {"message": "Logged out"}
+
+@auth_bp.post("/send_email")
+def email_route():
+    user, error = require_token()
+    if error:
+        return error
+
+    data = request.json
+    billing_id = data.get("billing_id")
+
+    if not billing_id:
+        return {"error": "billing_id required"}, 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # get billing + user email
+    cursor.execute("""
+        SELECT Billings.billingID, Billings.total_cost, Billings.order_date,
+               Users.email, Users.name
+        FROM Billings
+        JOIN Users ON Billings.userID = Users.userID
+        WHERE Billings.billingID=%s
+    """, (billing_id,))
+    billing = cursor.fetchone()
+
+    if not billing:
+        cursor.close()
+        conn.close()
+        return {"error": "Billing not found"}, 404
+
+    # get order items
+    cursor.execute("""
+        SELECT OrderItems.orderitemID, OrderItems.bookID, OrderItems.price,
+               OrderItems.order_type, Books.title
+        FROM OrderItems
+        JOIN Books ON OrderItems.bookID = Books.bookID
+        WHERE OrderItems.billingID=%s
+    """, (billing_id,))
+    items = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    # email body text
+    body = (
+        f"Hello {billing['name']},\n\n"
+        f"Your billing summary:\n"
+        f"Billing ID: {billing['billingID']}\n"
+        f"Date: {billing['order_date']}\n"
+        f"Total: ${billing['total_cost']}\n\n"
+        "Items:\n"
+    )
+
+    for item in items:
+        body += f"- {item['title']} (${item['price']}) [{item['order_type']}]\n"
+
+    body += "\nThank you!"
+
+    # send email
+    success = send_email(billing["email"], "Your Billing Receipt", body)
+
+    if success:
+        return {"message": "Email sent"}, 200
+    else:
+        return {"error": "Failed to send email"}, 500
+
+def send_email(to_email, subject, body):
+    sender = os.getenv("EMAIL_ADDRESS")
+    password = os.getenv("EMAIL_PASSWORD")
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = to_email
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender, password)
+            server.sendmail(sender, to_email, msg.as_string())
+
+        return True
+    except Exception as e:
+        print("Email error:", e)
+        return False

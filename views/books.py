@@ -289,7 +289,25 @@ class BookPage:
         # Clear the cart on successful purchase
         self.cart = []
 
-        messagebox.showinfo("Success", f"Checkout complete!\nBilling ID: {billing_id}")
+        # send email
+        email_payload = {"billing_id": billing_id}
+
+        email_resp = requests.post(
+            self.url + "/auth/send_email",
+            json=email_payload,
+            headers=headers
+        )
+
+        if email_resp.status_code == 200:
+            messagebox.showinfo(
+                "Success",
+                f"Checkout complete!\nBilling ID: {billing_id}\nAn email receipt was sent."
+            )
+        else:
+            messagebox.showwarning(
+                "Checkout Complete (Email Failed)",
+                f"Checkout complete.\nBilling ID: {billing_id}\nBut the email could not be sent."
+            )
 
     def open_cart_window(self):
         if hasattr(self, "cart_win") and self.cart_win.winfo_exists():
