@@ -30,6 +30,7 @@ CREATE TABLE Billings (
     order_date DATETIME NOT NULL,
     total_cost DECIMAL(10, 2),
     status ENUM('pending', 'paid') DEFAULT 'pending',
+    return_status ENUM('out', 'returned') DEFAULT 'out',
     FOREIGN KEY (userID) REFERENCES Users(userID)
 );
 

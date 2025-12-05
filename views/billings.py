@@ -39,7 +39,7 @@ class BillingPage:
         frame.pack(fill="both", expand=True)
 
         # TABLE (Treeview)
-        columns = ("ID", "UserID", "Date", "Total", "Status")
+        columns = ("ID", "UserID", "Date", "Total", "Status", "Rent Status")
         self.table = ttk.Treeview(frame, columns=columns, show="headings", height=12)
 
         for col in columns:
@@ -54,6 +54,7 @@ class BillingPage:
 
         tk.Button(btn_frame, text="View Billing", command=self.view_billing).grid(row=0, column=0, padx=10)
         tk.Button(btn_frame, text="Mark as Paid", command=self.update_status).grid(row=0, column=1, padx=10)
+        tk.Button(btn_frame, text="Return Rental", command=self.return_rental).grid(row=0, column=2, padx=10)
 
         self.load_billings()
 
@@ -78,7 +79,8 @@ class BillingPage:
                     row["userID"],
                     row["order_date"],
                     row["total_cost"],
-                    row["status"]
+                    row["status"],
+                    row["return_status"]
                 )
             )
 
@@ -122,6 +124,35 @@ class BillingPage:
             self.load_billings()
         else:
             messagebox.showerror("Error", response.json().get("error", "Unknown error"))
+
+    def return_rental(self):
+        selected = self.table.focus()
+        if not selected:
+            messagebox.showwarning("Select Billing", "You must select a billing to return.")
+            return
+
+        values = self.table.item(selected, "values")
+        billing_id = values[0]
+        status = values[4]
+
+        if status != "paid":
+            messagebox.showerror("Invalid", "Billing must be PAID before returning rentals.")
+            return
+
+        headers = {"Authorization": f"Bearer {self.session.token}"}
+        response = requests.put(f"{self.url}/billings/return/{billing_id}", headers=headers)
+
+        if response.status_code == 200:
+            msg = response.json().get("message", "Rental returned successfully")
+            messagebox.showinfo("Success", msg)
+
+            # Refresh table
+            self.table.delete(*self.table.get_children())
+            self.load_billings()
+        else:
+            error = response.json().get("error", "Unknown error")
+            messagebox.showerror("Error", error)
+
 
 class ViewBillingWindow:
     def __init__(self, root, session, url, billing_id):

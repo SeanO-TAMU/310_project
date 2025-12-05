@@ -48,7 +48,7 @@ def get_billing(id):
     
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT billingID, userID, order_date, total_cost, status FROM Billings WHERE billingID = %s", (id,))
+    cursor.execute("SELECT billingID, userID, order_date, total_cost, status, return_status FROM Billings WHERE billingID = %s", (id,))
     billing = cursor.fetchone()
     
     cursor.close()
@@ -142,3 +142,70 @@ def update_billing(id):
     conn.close()
 
     return {"message": "Billing updated successfully"}, 200
+
+@billings_bp.put("/return/<int:id>")
+def return_billing(id):
+    user, error = require_token()
+    if error:
+        return error
+    
+    if user["role"] != "manager":
+        return {"error": "Forbidden"}, 403
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({'error': 'Database connection failed'}), 500
+    
+    cursor = conn.cursor(dictionary=True)
+
+    # Get billing info
+    cursor.execute(
+        "SELECT status, return_status FROM Billings WHERE billingID = %s",
+        (id,)
+    )
+    billing = cursor.fetchone()
+
+    if billing is None:
+        return jsonify({'error': 'Billing not found'}), 404
+
+    # Must be paid
+    if billing["status"] != "paid":
+        return {"error": "Cannot return unpaid billing"}, 403
+
+    # Cannot return twice
+    if billing["return_status"] == "returned":
+        return {"error": "Billing already returned"}, 403
+
+    # Fetch order items
+    cursor.execute(
+        "SELECT bookID, order_type FROM OrderItems WHERE billingID = %s",
+        (id,)
+    )
+    order_items = cursor.fetchall()
+
+    # Count rental items
+    rented_items = [item for item in order_items if item["order_type"] == "rent"]
+
+    if len(rented_items) == 0:
+        return {"error": "No rented items in this billing to return"}, 403
+
+    # Return ONLY rented items (increase quantity)
+    for item in rented_items:
+        cursor.execute(
+            "UPDATE Books SET quantity = quantity + 1 WHERE bookID = %s",
+            (item["bookID"],)
+        )
+
+    # Mark billing as returned
+    cursor.execute(
+        "UPDATE Billings SET return_status = 'returned' WHERE billingID = %s",
+        (id,)
+    )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return {
+        "message": f"Returned {len(rented_items)} rented item(s) successfully"
+    }, 200
